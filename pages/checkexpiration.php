@@ -12,57 +12,6 @@
 
 # This page is called to batch email to all password in warning expiration or expired
 
-#==============================================================================
-# functions
-#==============================================================================
-
-function generate_url($reset_url, $action) {
-
-    if ( empty($reset_url) ) {
-
-        $server_name = $_SERVER['SERVER_NAME'];
-        $server_port = $_SERVER['SERVER_PORT'];
-        $script_name = $_SERVER['SCRIPT_NAME'];
-
-        # Build reset by token URL
-        $method = "http";
-        if( !empty($_SERVER['HTTPS']) || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')){
-           $method .= "s";
-        }
-
-
-        # change servername if HTTP_X_FORWARDED_HOST is set
-        if( isset($_SERVER['HTTP_X_FORWARDED_HOST'])){
-            $server_name = $_SERVER['HTTP_X_FORWARDED_HOST'];
-        }
-
-        # Force server port if non standard port
-        if (   ( $method === "http"  and $server_port != "80"  )
-            or ( $method === "https" and $server_port != "443" )
-        ) {
-           if( isset($_SERVER['HTTP_X_FORWARDED_PORT'])) {
-                $server_name .= ":".$_SERVER['HTTP_X_FORWARDED_PORT'];
-            } else {
-               $server_name .= ":".$server_port;
-            }
-
-        }
-
-        $reset_url = $method."://".$server_name.$script_name;
-    }
-
-    $url = $reset_url . "?action=".$action;
-
-    if ( !empty($reset_request_log) ) {
-        error_log("Genrated URL $url \n\n", 3, $reset_request_log);
-    } else {
-        error_log("Genrated URL $url");
-    }
-
-    return $url;
-    
-}
-
 
 #==============================================================================
 # POST parameters
@@ -205,8 +154,11 @@ if ( $result === "" ) {
 
                     # if user as pwdChangedTime compare with now
                     if ( $pwdChangedTime ) {
-                        $changeDateTime = DateTime::createFromFormat('YmdHis', substr($pwdChangedTime, 0, -1));
-                        $nowDateTime = new DateTime();
+                        # any changeDateTime is reported to the day at 00h00
+                        $changeDateTime = DateTime::createFromFormat('YmdHis', substr($pwdChangedTime, 0, 8). "000000");
+                     
+                        # now is reported to the current day at 00h00
+                        $nowDateTime = DateTime::createFromFormat("YmdHis",(new DateTime())->format("Ymd")."000000");
 
                         $search_policy = ldap_search($ldap, $pwdPolicySubentry, "(cn=*)");
                         $ppolicy_entry = ldap_first_entry($ldap, $search_policy);
@@ -237,8 +189,7 @@ if ( $result === "" ) {
                        #if password is in expire periode, send notify it the 1st day of warning, and the last day 
                         if( $nowDateTime >= $warningDateTime && $nowDateTime < $expireDateTime) {
                                
-                               #$expireInUnits =  (int)ceil(($expireDateTime->getTimestamp() - $nowDateTime->getTimestamp()) / $policy_expire_unit) ;
-                               $expireInUnits =   DateTime::createFromFormat("Ymd",$nowDateTime->format("Ymd"))->diff(DateTime::createFromFormat("Ymd", $expireDateTime->format("Ymd")))->days;
+                                $expireInUnits =   $nowDateTime->diff($expireDateTime)->days;
                             
                                error_log( "checkexpiration - user $login - warning, your password will expired in " . $expireInUnits . " days - warning :" . (int)( $pwdExpireWarning/$policy_expire_unit)); 
                                $nb_warning_users=$nb_warning_users+1;
@@ -246,7 +197,7 @@ if ( $result === "" ) {
 
                                # notify the first day and the last day 
                                if(  $expire_always_mail || $expireInUnits == 1 || $expireInUnits == (int)( $pwdExpireWarning/$policy_expire_unit)+1 ) {
-                                      $url= generate_url($reset_url, "change");
+                                      $url= generate_url($reset_url, "change") . "&login=" . $login;
                                       $data = array( "login" => $login, "mail" => $mail, "url" => $url, "days" => $expireInUnits ) ;
                                       # Send message
                                       if ( ! send_mail($mailer, $mail, $mail_from, $mail_from_name, $messages["warningexpiresubject"], $messages["warningexpiremessage"].$mail_signature, $data) ) {
@@ -261,8 +212,7 @@ if ( $result === "" ) {
                          # if password is expired, the notify the 1st day of expiration
                              if ( $nowDateTime >= $expireDateTime) {
 
-                               #$expireInUnits =  (int)ceil(($nowDateTime->getTimestamp() - $expireDateTime->getTimestamp()) / $policy_expire_unit); 
-                               $expireInUnits =   DateTime::createFromFormat("Ymd", $expireDateTime->format("Ymd"))->diff(DateTime::createFromFormat("Ymd", $nowDateTime->format("Ymd")))->days;
+                               $expireInUnits =   $expireDateTime->diff($nowDateTime)->days;
                                  
                                error_log( "checkexpiration - user $login - alert, your password is expired since " .  $expireInUnits . " days"); 
                                $nb_expired_users=$nb_expired_users+1;
@@ -271,7 +221,7 @@ if ( $result === "" ) {
 
                                # notify the first day of expire
                                if(  $expire_always_mail || $expireInUnits == 1){
-                                      $url= generate_url($reset_url, "sendtoken");
+                                      $url= generate_url($reset_url, "sendtoken") . "&login=" . $login ;
                                       $data = array( "login" => $login, "mail" => $mail, "url" => $url, "days" => $expireInUnits ) ;
                                       # Send message
                                       if ( ! send_mail($mailer, $mail, $mail_from, $mail_from_name, $messages["alertexpiresubject"], $messages["alertexpiremessage"].$mail_signature, $data) ) {
