@@ -180,14 +180,18 @@ if ( $result === "" ) {
                        }
 
 
-                       $expireDateTime = clone $changeDateTime; $expireDateTime->modify('+'. $pwdMaxAge . ' seconde');
-                       $warningDateTime = clone $changeDateTime; $warningDateTime->modify('+'. $pwdMaxAge . ' seconde');  $warningDateTime->modify('-'. $pwdExpireWarning  . ' seconde');
-
-
-                        error_log( "checkexpiration - user $login - policy MaxAge=$pwdMaxAge,ExpireWarning=$pwdExpireWarning - Current:" . $nowDateTime->format("Y-m-d H:i:s") . ", Changed:" .  $changeDateTime->format("Y-m-d H:i:s") . ", Warning:" . $warningDateTime->format("Y-m-d H:i:s") .", Expired:" . $expireDateTime->format("Y-m-d H:i:s") );
+                        $expireDateTime = clone $changeDateTime; $expireDateTime->modify('+'. $pwdMaxAge . ' seconde');
+                        $warningDateTime = clone $changeDateTime; $warningDateTime->modify('+'. $pwdMaxAge . ' seconde');  $warningDateTime->modify('-'. $pwdExpireWarning  . ' seconde');
+                     
+                       # ignore $changeDateTime if $pwdMaxAge == 0
+                       if (  $pwdMaxAge == 0) {
+                             error_log( "checkexpiration - user $login - policy MaxAge=$pwdMaxAge - Ignore expiration");
+                       }else{
+                             error_log( "checkexpiration - user $login - policy MaxAge=$pwdMaxAge,ExpireWarning=$pwdExpireWarning - Current:" . $nowDateTime->format("Y-m-d H:i:s") . ", Changed:" .  $changeDateTime->format("Y-m-d H:i:s") . ", Warning:" . $warningDateTime->format("Y-m-d H:i:s") .", Expired:" . $expireDateTime->format("Y-m-d H:i:s") );
+                       }
                        
                        #if password is in expire periode, send notify it the 1st day of warning, and the last day 
-                        if( $nowDateTime >= $warningDateTime && $nowDateTime < $expireDateTime) {
+                        if( $pwdMaxAge > 0 && $nowDateTime >= $warningDateTime && $nowDateTime < $expireDateTime) {
                                
                                 $expireInUnits =   $nowDateTime->diff($expireDateTime)->days;
                             
@@ -210,7 +214,7 @@ if ( $result === "" ) {
                               }
                         }else{ 
                          # if password is expired, the notify the 1st day of expiration
-                             if ( $nowDateTime >= $expireDateTime) {
+                             if ( $pwdMaxAge >0 && $nowDateTime >= $expireDateTime) {
 
                                $expireInUnits =   $expireDateTime->diff($nowDateTime)->days;
                                  
