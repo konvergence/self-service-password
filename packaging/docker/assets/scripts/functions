@@ -1,0 +1,52 @@
+#!/bin/bash
+set -e
+. ${SCRIPT_DIR}/env-defaults
+
+DIST_SUFFIX='dist'
+
+FILE_VHOST_CONFIG='/etc/apache2/sites-available/self-service-password.conf'
+#FILE_LSSP_CONFIG='/usr/share/self-service-password/conf/config.inc.php'
+#FILE_MSMTP_CONFIG='/etc/msmtprc'
+
+## Replace placeholders with values
+# $1: file with placeholders to replace
+# $x: placeholders to replace
+update_template() {
+  local FILE="${1?missing argument}"
+  shift
+
+  [[ ! -f ${FILE} ]] && return 1
+
+  local VARIABLES=($@)
+  local USR=$(stat -c %U "${FILE}")
+  local tmp_file="$(mktemp)"
+  cp -a "${FILE}" "${tmp_file}"
+
+  local variable
+  for variable in ${VARIABLES[@]}; do
+    # Keep the compatibilty: {{VAR}} => ${VAR}
+    sed -ri "s/[{]{2}$variable[}]{2}/\${$variable}/g" "${tmp_file}"
+  done
+
+  # Replace placeholders
+  (
+    export ${VARIABLES[@]}
+    local IFS=":"; sudo -HEu ${USR} envsubst "${VARIABLES[*]/#/$}" < "${tmp_file}" > "${FILE}"
+  )
+  rm -f ${tmp_file}
+}
+
+
+
+
+
+configure_vhost_subdir() {
+  echo "Configuring vhost subdir"
+  
+  cp -v "${FILE_VHOST_CONFIG}.${DIST_SUFFIX}" "${FILE_VHOST_CONFIG}"
+  
+  update_template "${FILE_VHOST_CONFIG}" \
+    VIRTUAL_SUBDIR
+}
+
+
