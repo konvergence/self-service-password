@@ -38,6 +38,7 @@ ENV LDAP_URL="ldap://ldap:389" \
 RUN apt update &&  apt-get install -y software-properties-common python3-software-properties \
 &&  add-apt-repository -y ppa:ondrej/php && apt update \
 &&  apt-get install -y apache2  php8.1 php8.1-ldap php8.1-mcrypt curl gettext-base ldap-utils gawk \
+&&  apt-get install -y sudo \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* \
 && rm -rf /tmp/*
