@@ -61,10 +61,10 @@ RUN a2dissite 000-default && a2ensite self-service-password
 
 
 # change in pages to display ldap_extended_error, checkexpiration, reset_url automatic build from HTTP_X_FORWARDED_PROTO/HOST/PORT 
-RUN curl -s -L https://github.com/konvergence/self-service-password/archive/v1.1-beta.3.tar.gz -o /tmp/v1.1-beta.3.tar.gz \
-&&  cd /tmp; tar -zxvf /tmp/v1.1-beta.3.tar.gz \
-&&  cp -rf /tmp/self-service-password-1.1-beta.3/* /usr/share/self-service-password/ \
-&& rm -rf /tmp/self-service-password-1.1-beta.3/ /tmp/v1.1-beta.3.tar.gz 
+RUN curl -s -L https://github.com/konvergence/self-service-password/archive/v1.3.0-beta.tar.gz -o /tmp/v1.3.0-beta.tar.gz \
+&&  cd /tmp; tar -zxvf /tmp/v1.3.0-beta.tar.gz \
+&&  cp -rf /tmp/self-service-password-1.3.0-beta/* /usr/share/self-service-password/ \
+&& rm -rf /tmp/self-service-password-1.3.0-beta/ /tmp/v1.3.0-beta.tar.gz 
 
 
 # This is where configuration goes coming from https://raw.githubusercontent.com/konvergence/self-service-password/v1.1-beta.3/conf/config.inc.php
