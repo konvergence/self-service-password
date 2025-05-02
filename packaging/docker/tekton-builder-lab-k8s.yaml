@@ -18,9 +18,9 @@ spec:
     - name: dockerfile-name
       value: Dockerfile
     - name: build-args
-      value: build_args.txt
+      value: ./packaging/docker/build_args.txt
     - name: build-tags
-      value: build_tags.txt
+      value: ./packaging/docker/build_tags.txt
     - name: build-log-level
       value: info
       
